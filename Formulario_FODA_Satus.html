@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matriz FODA · Satus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg: #F3F4EF;
+  --surface: #FFFFFF;
+  --surface-sunken: #ECEDE6;
+  --ink: #1B2420;
+  --ink-soft: #4B534D;
+  --muted: #7A8078;
+  --border: #DEDFD5;
+  --border-strong: #C6C9BC;
+  --primary: #2F6B4F;
+  --primary-dark: #204A37;
+  --primary-tint: #E4EEE7;
+  --accent: #C97C2C;
+  --accent-tint: #F7E9D8;
+  --danger: #B23A34;
+  --danger-tint: #F6E2E0;
+  --fortaleza: #2F6B4F;
+  --fortaleza-tint: #E4EEE7;
+  --oportunidad: #2C6E8C;
+  --oportunidad-tint: #E2EDF2;
+  --debilidad: #B8791F;
+  --debilidad-tint: #F5EBD9;
+  --amenaza: #B23A34;
+  --amenaza-tint: #F6E2E0;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(27,36,32,0.04), 0 6px 20px rgba(27,36,32,0.06);
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+}
+h1,h2,h3,h4{font-family:var(--font-display);margin:0;letter-spacing:-0.01em;}
+p{margin:0;}
+button{font-family:var(--font-body);cursor:pointer;}
+input,select,textarea{font-family:var(--font-body);}
+::selection{background:var(--primary-tint);}
+
+.app{max-width:920px;margin:0 auto;padding:0 20px 80px;}
+@media (max-width:600px){.app{padding:0 14px 64px;}}
+
+/* ---------- Header ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:var(--bg);
+  padding:18px 0 12px;
+  border-bottom:1px solid var(--border);
+}
+.topbar-inner{max-width:920px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+@media (max-width:600px){.topbar-inner{padding:0 14px;}}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;background:var(--primary);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);color:#fff;font-weight:600;font-size:12px;letter-spacing:0.02em;
+  flex-shrink:0;
+}
+.brand-text h1{font-size:16px;font-weight:600;}
+.brand-text span{font-size:12px;color:var(--muted);}
+.nav-toggle{
+  border:1px solid var(--border-strong);background:var(--surface);color:var(--ink-soft);
+  padding:8px 14px;border-radius:100px;font-size:13px;font-weight:600;
+  display:flex;align-items:center;gap:6px;
+}
+.nav-toggle:hover{border-color:var(--primary);color:var(--primary-dark);}
+
+/* ---------- Instrument panel (counters) ---------- */
+.panel{
+  margin:18px 0 22px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 18px 16px;
+  box-shadow:var(--shadow);
+}
+.panel-title{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;
+}
+.gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media (max-width:600px){.gauges{grid-template-columns:repeat(2,1fr);}}
+.gauge{display:flex;flex-direction:column;gap:8px;}
+.gauge-head{display:flex;align-items:center;gap:8px;}
+.gauge-badge{
+  width:22px;height:22px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:11px;font-weight:600;color:#fff;
+}
+.gauge-label{font-size:12.5px;font-weight:600;color:var(--ink-soft);}
+.gauge-track{height:7px;border-radius:100px;background:var(--surface-sunken);overflow:hidden;}
+.gauge-fill{height:100%;border-radius:100px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+.gauge-count{font-family:var(--font-mono);font-size:13px;color:var(--ink-soft);display:flex;justify-content:space-between;}
+.gauge-count b{color:var(--ink);font-weight:600;}
+
+/* ---------- Stepper ---------- */
+.stepper{display:flex;gap:4px;margin-bottom:26px;overflow-x:auto;padding-bottom:2px;}
+.step-dot{
+  flex:1;min-width:0;text-align:center;padding:9px 4px;border-radius:8px;
+  font-size:11px;font-weight:600;color:var(--muted);border-bottom:3px solid var(--border);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.step-dot.active{color:var(--primary-dark);border-bottom-color:var(--primary);}
+.step-dot.done{color:var(--ink-soft);border-bottom-color:var(--border-strong);}
+
+/* ---------- Cards / sections ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;margin-bottom:16px;box-shadow:var(--shadow);
+}
+.section-head{margin-bottom:20px;}
+.section-eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.section-head h2{font-size:22px;}
+.section-head p{color:var(--ink-soft);font-size:14.5px;margin-top:6px;}
+
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+.field .hint{font-size:12px;color:var(--muted);margin-top:5px;}
+.field input[type=text], .field input[type=number], .field select, .field textarea{
+  width:100%;padding:11px 13px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+  background:var(--surface);font-size:14.5px;color:var(--ink);
+}
+.field textarea{resize:vertical;min-height:74px;}
+.field input:focus, .field select:focus, .field textarea:focus{
+  outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint);
+}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media (max-width:560px){.grid-2{grid-template-columns:1fr;}}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media (max-width:720px){.grid-3{grid-template-columns:1fr 1fr;}}
+@media (max-width:480px){.grid-3{grid-template-columns:1fr;}}
+
+.warning-note{
+  display:flex;gap:8px;align-items:flex-start;background:var(--accent-tint);color:#7A4E14;
+  border-radius:var(--radius-sm);padding:9px 12px;font-size:12.5px;margin-top:7px;
+}
+.warning-note.danger{background:var(--danger-tint);color:#7A2721;}
+
+/* ---------- Factor cards ---------- */
+.factor-card{
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;margin-bottom:14px;
+  background:var(--surface-sunken);position:relative;
+}
+.factor-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.factor-num{display:flex;align-items:center;gap:9px;}
+.factor-num .badge{
+  width:26px;height:26px;border-radius:7px;color:#fff;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:12px;font-weight:600;
+}
+.factor-num span{font-weight:600;font-size:14px;}
+.btn-remove{
+  border:none;background:transparent;color:var(--danger);font-size:12.5px;font-weight:600;
+  padding:6px 8px;border-radius:7px;
+}
+.btn-remove:hover{background:var(--danger-tint);}
+
+.empty-state{
+  text-align:center;padding:38px 20px;color:var(--muted);border:1.5px dashed var(--border-strong);
+  border-radius:var(--radius-sm);font-size:14px;
+}
+
+/* ---------- Buttons ---------- */
+.btn{
+  border-radius:100px;padding:12px 22px;font-size:14.5px;font-weight:600;border:1px solid transparent;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-primary:disabled{background:var(--border-strong);color:var(--muted);cursor:not-allowed;}
+.btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--border-strong);}
+.btn-secondary:hover{border-color:var(--primary);color:var(--primary-dark);}
+.btn-add{
+  width:100%;background:var(--surface);border:1.5px dashed var(--border-strong);color:var(--primary-dark);
+  padding:13px;border-radius:var(--radius-sm);font-weight:600;font-size:14px;
+}
+.btn-add:hover{border-color:var(--primary);background:var(--primary-tint);}
+
+.footer-nav{display:flex;justify-content:space-between;align-items:center;margin-top:22px;gap:10px;}
+
+/* ---------- Type radio cards (category badges reused for legend) ---------- */
+.type-select{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px;}
+@media (max-width:560px){.type-select{grid-template-columns:repeat(2,1fr);}}
+.type-opt{
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 10px;text-align:center;
+  background:var(--surface);
+}
+.type-opt.selected{border-color:currentColor;box-shadow:0 0 0 3px currentColor;box-shadow:0 0 0 2px currentColor;}
+.type-opt .badge{width:28px;height:28px;border-radius:8px;margin:0 auto 7px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-mono);font-weight:600;font-size:13px;}
+.type-opt div.name{font-size:12.5px;font-weight:600;}
+
+/* ---------- Evaluation table ---------- */
+.eval-row{
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;background:var(--surface-sunken);
+}
+.eval-row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px;}
+.eval-desc{font-size:13.5px;font-weight:500;color:var(--ink);max-width:70%;}
+.eval-tag{
+  font-family:var(--font-mono);font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:100px;
+  color:#fff;white-space:nowrap;
+}
+.eval-grid{margin-bottom:10px;}
+.eval-result{
+  display:flex;gap:18px;flex-wrap:wrap;padding-top:10px;border-top:1px dashed var(--border-strong);
+}
+.eval-result .metric{display:flex;flex-direction:column;gap:2px;}
+.eval-result .metric-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:var(--font-mono);}
+.eval-result .metric-value{font-family:var(--font-mono);font-weight:600;font-size:15px;}
+.risk-pill{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;display:inline-block;}
+
+/* ---------- Summary ---------- */
+.summary-block{margin-bottom:22px;}
+.summary-block-head{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+.summary-item{
+  display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;
+}
+.summary-item:last-child{border-bottom:none;}
+.summary-item .n{font-family:var(--font-mono);color:var(--muted);font-size:12.5px;flex-shrink:0;width:20px;}
+.summary-item .body{flex:1;}
+.summary-item .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:100px;background:var(--surface-sunken);color:var(--ink-soft);}
+.summary-item .plan{margin-top:6px;font-size:12.5px;color:var(--ink-soft);font-style:italic;}
+
+/* ---------- Validation banner ---------- */
+.validation-banner{
+  border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px;font-size:13.5px;
+}
+.validation-banner.blocked{background:var(--danger-tint);color:#7A2721;}
+.validation-banner.ok{background:var(--primary-tint);color:var(--primary-dark);}
+.validation-banner ul{margin:8px 0 0;padding-left:18px;}
+
+/* ---------- Success screen ---------- */
+.success-wrap{text-align:center;padding:50px 20px;}
+.success-icon{
+  width:64px;height:64px;border-radius:50%;background:var(--primary-tint);color:var(--primary);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:28px;
+}
+
+/* ---------- Consolidado view ---------- */
+.filters-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+@media (max-width:700px){.filters-bar{grid-template-columns:repeat(2,1fr);}}
+.filters-bar select{padding:9px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm);}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px;}
+th{text-align:left;padding:10px 12px;background:var(--surface-sunken);font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+@media (max-width:650px){.dash-grid{grid-template-columns:1fr;}}
+.bar-row{display:grid;grid-template-columns:110px 1fr 34px;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px;}
+.bar-track{height:9px;border-radius:100px;background:var(--surface-sunken);overflow:hidden;}
+.bar-fill{height:100%;border-radius:100px;}
+.empty-analyses{text-align:center;padding:60px 20px;color:var(--muted);}
+</style>
+
+<!--[if gte mso 9]><xml>
+<mso:CustomDocumentProperties>
+<mso:_ApprovalStatus msdt:dt="string">0</mso:_ApprovalStatus>
+<mso:_ApprovalAssignedTo msdt:dt="string"></mso:_ApprovalAssignedTo>
+<mso:_ApprovalRespondedBy msdt:dt="string"></mso:_ApprovalRespondedBy>
+</mso:CustomDocumentProperties>
+</xml><![endif]-->
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">FODA</div>
+      <div class="brand-text">
+        <h1>Matriz FODA</h1>
+        <span id="brandSub">Análisis estandarizado · SGC</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="nav-toggle" id="settingsToggle" onclick="openSettings()" title="Configurar conexión con SharePoint" style="padding:8px 10px;">⚙</button>
+      <button class="nav-toggle" id="navToggle" onclick="toggleView()">Ver consolidado</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="app"></div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN / LISTAS ESTANDARIZADAS
+   ========================================================= */
+const PAISES = ['Argentina','Uruguay'];
+const TENDENCIAS = ['Mejora mucho','Mejora','Se mantiene','Empeora','Empeora mucho'];
+// El peso de la tendencia está pensado para el RIESGO: cuanto más se agrava la
+// situación (empeora), mayor es el riesgo — sea una fortaleza que se debilita,
+// una oportunidad que se cierra, una debilidad que se agrava o una amenaza que crece.
+const TENDENCIA_FACTOR = {'Empeora mucho':5,'Empeora':4,'Se mantiene':3,'Mejora':2,'Mejora mucho':1};
+const IMPACTOS = ['Bajo','Medio','Alto','Muy alto'];
+const IMPACTO_PESO = {'Bajo':2,'Medio':3,'Alto':4,'Muy alto':5};
+const IMPORTANCIAS = ['Poco importante','Importante','Muy importante','Totalmente importante'];
+const IMPORTANCIA_PESO = {'Poco importante':2,'Importante':3,'Muy importante':4,'Totalmente importante':5};
+
+const CAT = {
+  FORTALEZA:   {key:'FORTALEZA',  label:'Fortaleza',    plural:'Fortalezas',    letter:'F', color:'var(--fortaleza)',   tint:'var(--fortaleza-tint)'},
+  OPORTUNIDAD: {key:'OPORTUNIDAD',label:'Oportunidad',  plural:'Oportunidades', letter:'O', color:'var(--oportunidad)', tint:'var(--oportunidad-tint)'},
+  DEBILIDAD:   {key:'DEBILIDAD',  label:'Debilidad',    plural:'Debilidades',   letter:'D', color:'var(--debilidad)',   tint:'var(--debilidad-tint)'},
+  AMENAZA:     {key:'AMENAZA',    label:'Amenaza',      plural:'Amenazas',      letter:'A', color:'var(--amenaza)',     tint:'var(--amenaza-tint)'},
+};
+const CAT_ORDER = ['FORTALEZA','OPORTUNIDAD','DEBILIDAD','AMENAZA'];
+const MIN_POR_CATEGORIA = 3;
+
+const STEPS = [
+  {id:'info', label:'Información general'},
+  {id:'FORTALEZA', label:'Fortalezas'},
+  {id:'OPORTUNIDAD', label:'Oportunidades'},
+  {id:'DEBILIDAD', label:'Debilidades'},
+  {id:'AMENAZA', label:'Amenazas'},
+  {id:'eval', label:'Evaluación'},
+  {id:'resumen', label:'Resumen'},
+  {id:'confirm', label:'Confirmación'},
+];
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+let view = 'wizard'; // 'wizard' | 'consolidado' | 'settings'
+let viewBeforeSettings = 'wizard';
+let stepIndex = 0;
+let submitted = false;
+let saveFailed = false;
+let syncStatus = null; // null | 'synced' | 'local-only' | 'error'
+let lastSavedId = null;
+
+let info = { paises: ['Argentina'], periodo: String(new Date().getFullYear()+ (new Date().getMonth()>=6?0:0)), responsable:'' };
+let factores = []; // {id,tipo,descripcion,pais,tendencia,planAccion,impacto,importancia}
+let factorSeq = 1;
+
+let duplicateDismissed = {}; // id -> true once user clicks "continuar igualmente"
+let consolidado = { filters:{pais:'',tipo:'',tendencia:'',riesgo:'',periodo:''}, rows:[], loaded:false, source:'local' };
+
+// Configuración de conexión con SharePoint (vía Power Automate). Se guarda en
+// este navegador (localStorage), no en el archivo, así que cada persona que
+// use el formulario la pega una vez desde el panel de configuración (⚙).
+let spConfig = { saveUrl:'', listUrl:'' };
+(function loadSpConfig(){
+  try{
+    const raw = localStorage.getItem('foda:sp-config');
+    if(raw){ const parsed = JSON.parse(raw); spConfig.saveUrl = parsed.saveUrl||''; spConfig.listUrl = parsed.listUrl||''; }
+  }catch(e){ /* sin configuración guardada */ }
+})();
+function spEnabled(){ return !!(spConfig.saveUrl && spConfig.listUrl); }
+
+/* =========================================================
+   HELPERS DE NEGOCIO
+   ========================================================= */
+function newFactor(tipo){
+  return { id:'f'+(factorSeq++), tipo, descripcion:'', pais:'Argentina', tendencia:'', planAccion:'', impacto:'', importancia:'' };
+}
+function countByTipo(tipo){ return factores.filter(f=>f.tipo===tipo).length; }
+function factoresByTipo(tipo){ return factores.filter(f=>f.tipo===tipo); }
+
+function computeEval(f){
+  const hasIn = f.impacto && f.importancia;
+  const G = hasIn ? IMPACTO_PESO[f.impacto]*IMPORTANCIA_PESO[f.importancia] : null;
+  const H = G===null? null : (G<=6?'Media':(G<=12?'Alta':'Muy Alta'));
+  const tFactor = f.tendencia ? TENDENCIA_FACTOR[f.tendencia] : null;
+  const J = (G!==null && tFactor!==null) ? G*tFactor : null;
+  let riesgo = null;
+  if(J!==null){
+    riesgo = J<=25?'Bajo':(J<=50?'Medio':(J<=75?'Alto':'Muy Alto'));
+  }
+  return {G,H,J,riesgo};
+}
+function riskColor(r){
+  if(r==='Bajo') return {bg:'var(--fortaleza-tint)', fg:'var(--fortaleza)'};
+  if(r==='Medio') return {bg:'var(--debilidad-tint)', fg:'var(--debilidad)'};
+  if(r==='Alto') return {bg:'var(--accent-tint)', fg:'#8A4A0D'};
+  if(r==='Muy Alto') return {bg:'var(--amenaza-tint)', fg:'var(--amenaza)'};
+  return {bg:'var(--surface-sunken)', fg:'var(--muted)'};
+}
+
+function wordCount(s){ return (s||'').trim().split(/\s+/).filter(Boolean).length; }
+function isDescTooShort(s){ return wordCount(s) > 0 && wordCount(s) < 5; }
+
+function tokenize(s){
+  return new Set((s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>=4));
+}
+function jaccard(a,b){
+  const ta=tokenize(a), tb=tokenize(b);
+  if(ta.size===0 || tb.size===0) return 0;
+  let inter=0; ta.forEach(w=>{ if(tb.has(w)) inter++; });
+  const union = ta.size+tb.size-inter;
+  return union===0?0:inter/union;
+}
+function findDuplicateOf(factor){
+  const sameTipo = factoresByTipo(factor.tipo).filter(f=>f.id!==factor.id);
+  for(const other of sameTipo){
+    if(wordCount(factor.descripcion)<3 || wordCount(other.descripcion)<3) continue;
+    if(jaccard(factor.descripcion, other.descripcion) >= 0.45) return other;
+  }
+  return null;
+}
+
+function missingSummary(){
+  const missing = [];
+  CAT_ORDER.forEach(k=>{
+    const n = countByTipo(k);
+    if(n < MIN_POR_CATEGORIA) missing.push({cat:k, need: MIN_POR_CATEGORIA-n});
+  });
+  return missing;
+}
+
+/* =========================================================
+   PERSISTENCIA
+   Dos capas:
+   1) localStorage del navegador — siempre se usa como caché/respaldo local.
+   2) SharePoint (vía Power Automate), si está configurado en el panel ⚙ —
+      es la fuente compartida entre todos los que cargan el formulario.
+   ========================================================= */
+function lsGet(key){
+  try{
+    const raw = localStorage.getItem(key);
+    return raw===null ? null : {key, value: raw};
+  }catch(e){ return null; }
+}
+function lsSet(key, value){
+  try{ localStorage.setItem(key, value); return {key, value}; }
+  catch(e){ console.error('No se pudo guardar en localStorage', e); return null; }
+}
+
+async function saveAnalisis(){
+  const id = 'a_'+Date.now();
+  const record = {
+    id,
+    fecha: new Date().toISOString(),
+    info: {...info},
+    factores: factores.map(f=>({...f, ...computeEval(f)}))
+  };
+
+  // 1) Guardado local (siempre, como respaldo aunque falle SharePoint)
+  try{
+    const recordStr = JSON.stringify(record);
+    lsSet('foda:analisis:'+id, recordStr);
+    let idx = [];
+    const idxRes = lsGet('foda:index');
+    if(idxRes && idxRes.value){ try{ idx = JSON.parse(idxRes.value); }catch(e){ idx = []; } }
+    idx.push({id, fecha:record.fecha, periodo:info.periodo, responsable:info.responsable, paises:info.paises, total:factores.length});
+    lsSet('foda:index', JSON.stringify(idx));
+  }catch(e){
+    console.error('Error guardando análisis localmente', e);
+    syncStatus = 'error';
+    return null;
+  }
+
+  // 2) Envío a SharePoint, si está configurado
+  if(spEnabled()){
+    try{
+      const body = {
+        analisisId: id,
+        fecha: record.fecha,
+        periodo: info.periodo,
+        responsable: info.responsable,
+        factores: record.factores.map(f=>({
+          tipo: f.tipo, descripcion: f.descripcion, pais: f.pais,
+          impacto: f.impacto, importancia: f.importancia, tendencia: f.tendencia,
+          planAccion: f.planAccion, puntuacionBase: f.G, puntuacionFinal: f.J, perfilRiesgo: f.riesgo,
+        })),
+      };
+      const res = await fetch(spConfig.saveUrl, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body),
+      });
+      syncStatus = res.ok ? 'synced' : 'error';
+    }catch(e){
+      console.warn('No se pudo sincronizar con SharePoint, quedó guardado localmente.', e);
+      syncStatus = 'error';
+    }
+  } else {
+    syncStatus = 'local-only';
+  }
+
+  return id;
+}
+
+function mapSharePointItem(item){
+  return {
+    analisisId: item.AnalisisID || item.Id || String(item.ID||''),
+    fecha: item.Fecha || item.Created || '',
+    periodo: item.Periodo_ || item.Periodo || '',
+    responsable: item.Responsable || '',
+    tipo: (item.Tipo_ || item.Tipo || '').toString().toUpperCase().trim(),
+    descripcion: item.Descripcion || '',
+    pais: item.Pais || '',
+    impacto: item.Impacto || '',
+    importancia: item.Importancia || '',
+    tendencia: item.Tendencia || '',
+    planAccion: item.PlanAccion || '',
+    puntuacionBase: (item.PuntuacionBase!==undefined && item.PuntuacionBase!==null && item.PuntuacionBase!=='') ? Number(item.PuntuacionBase) : null,
+    puntuacion: (item.PuntuacionFinal!==undefined && item.PuntuacionFinal!==null && item.PuntuacionFinal!=='') ? Number(item.PuntuacionFinal) : null,
+    riesgo: item.PerfilRiesgo || '',
+  };
+}
+
+function localRowsFromStorage(){
+  const rows = [];
+  try{
+    const idxRes = lsGet('foda:index');
+    const idx = idxRes && idxRes.value ? JSON.parse(idxRes.value) : [];
+    for(const entry of idx){
+      const r = lsGet('foda:analisis:'+entry.id);
+      if(!r || !r.value) continue;
+      let rec; try{ rec = JSON.parse(r.value); }catch(e){ continue; }
+      (rec.factores||[]).forEach(f=>{
+        rows.push({
+          analisisId: rec.id, fecha: rec.fecha, periodo: rec.info.periodo, responsable: rec.info.responsable,
+          tipo: f.tipo, descripcion: f.descripcion, pais: f.pais, impacto: f.impacto, importancia: f.importancia,
+          tendencia: f.tendencia, planAccion: f.planAccion, puntuacionBase: f.G, puntuacion: f.J, riesgo: f.riesgo,
+        });
+      });
+    }
+  }catch(e){ /* sin datos locales */ }
+  return rows;
+}
+
+async function loadConsolidado(){
+  consolidado.rows = [];
+  consolidado.source = 'local';
+  consolidado.loadError = false;
+
+  if(spEnabled()){
+    try{
+      const res = await fetch(spConfig.listUrl, {method:'GET'});
+      if(res.ok){
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.value || []);
+        consolidado.rows = items.map(mapSharePointItem);
+        consolidado.source = 'sharepoint';
+        consolidado.loaded = true;
+        return;
+      } else {
+        consolidado.loadError = true;
+      }
+    }catch(e){
+      console.warn('No se pudo consultar SharePoint, se muestran los datos locales.', e);
+      consolidado.loadError = true;
+    }
+  }
+  // Sin SharePoint configurado, o falló la consulta: mostramos lo local.
+  consolidado.rows = localRowsFromStorage();
+  consolidado.source = 'local';
+  consolidado.loaded = true;
+}
+
+/* =========================================================
+   RENDER — utilidades
+   ========================================================= */
+function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderGauges(){
+  return `<div class="panel">
+    <div class="panel-title"><span>Estado del análisis</span><span>Mínimo ${MIN_POR_CATEGORIA} por categoría</span></div>
+    <div class="gauges">
+      ${CAT_ORDER.map(k=>{
+        const c = CAT[k]; const n = countByTipo(k); const pct = Math.min(100,(n/MIN_POR_CATEGORIA)*100);
+        const ok = n>=MIN_POR_CATEGORIA;
+        return `<div class="gauge">
+          <div class="gauge-head">
+            <div class="gauge-badge" style="background:${c.color}">${c.letter}</div>
+            <div class="gauge-label">${c.plural}</div>
+          </div>
+          <div class="gauge-track"><div class="gauge-fill" style="width:${pct}%;background:${ok?'var(--primary)':'var(--accent)'}"></div></div>
+          <div class="gauge-count"><b>${n}</b><span>/ ${MIN_POR_CATEGORIA}${ok?' ✓':''}</span></div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function renderStepper(){
+  return `<div class="stepper">
+    ${STEPS.map((s,i)=>`<div class="step-dot ${i===stepIndex?'active':(i<stepIndex?'done':'')}" data-step="${i}">${i+1}. ${s.label}</div>`).join('')}
+  </div>`;
+}
+
+/* =========================================================
+   PASO: INFO GENERAL
+   ========================================================= */
+function renderInfoStep(){
+  return `<div class="card">
+    <div class="section-head">
+      <div class="section-eyebrow">Paso 1 de 8</div>
+      <h2>Información general</h2>
+      <p>Estos datos identifican el análisis. Se completan una sola vez.</p>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>País / Países</label>
+        <select id="in_paises" multiple size="2">
+          ${PAISES.map(p=>`<option value="${p}" ${info.paises.includes(p)?'selected':''}>${p}</option>`).join('')}
+        </select>
+        <p class="hint">Mantené Ctrl (⌘ en Mac) para seleccionar más de uno.</p>
+      </div>
+      <div class="field">
+        <label>Período</label>
+        <input type="text" id="in_periodo" value="${esc(info.periodo)}" placeholder="Ej: 2026">
+      </div>
+    </div>
+    <div class="field">
+      <label>Responsable</label>
+      <input type="text" id="in_responsable" value="${esc(info.responsable)}" placeholder="Nombre y apellido">
+    </div>
+    <div class="footer-nav">
+      <div></div>
+      <button class="btn btn-primary" onclick="goNext()">Continuar</button>
+    </div>
+  </div>`;
+}
+function bindInfoStep(){
+  document.getElementById('in_paises').onchange = (e)=>{
+    info.paises = Array.from(e.target.selectedOptions).map(o=>o.value);
+  };
+  document.getElementById('in_periodo').oninput = (e)=> info.periodo = e.target.value;
+  document.getElementById('in_responsable').oninput = (e)=> info.responsable = e.target.value;
+}
+
+/* =========================================================
+   PASO: CARGA DE FACTORES (por categoría)
+   ========================================================= */
+function renderFactorCard(f, idx, c){
+  const dup = findDuplicateOf(f);
+  const dupWarn = dup && !duplicateDismissed[f.id];
+  return `<div class="factor-card" data-fid="${f.id}">
+    <div class="factor-head">
+      <div class="factor-num">
+        <div class="badge" style="background:${c.color}">${c.letter}</div>
+        <span>${c.label} #${idx+1}</span>
+      </div>
+      <button class="btn-remove" onclick="removeFactor('${f.id}')">Eliminar</button>
+    </div>
+    <div class="field">
+      <label>Descripción del factor</label>
+      <textarea data-role="descripcion" placeholder="Ej: Alta experiencia del equipo técnico y conocimiento de los procesos.">${esc(f.descripcion)}</textarea>
+      ${isDescTooShort(f.descripcion) ? `<div class="warning-note">Describa el factor con mayor detalle para facilitar su análisis.</div>` : ''}
+      ${dupWarn ? `<div class="warning-note danger">
+          Este factor podría ser similar a otro ya registrado: <em>&ldquo;${esc(dup.descripcion.slice(0,70))}${dup.descripcion.length>70?'…':''}&rdquo;</em>
+          <div style="margin-top:8px;display:flex;gap:8px;">
+            <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="focusFactor('${dup.id}')">Revisar</button>
+            <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="dismissDup('${f.id}')">Continuar igualmente</button>
+          </div>
+        </div>` : ''}
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>País</label>
+        <select data-role="pais">
+          ${PAISES.map(p=>`<option value="${p}" ${f.pais===p?'selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>Tendencia</label>
+        <select data-role="tendencia">
+          <option value="" ${f.tendencia===''?'selected':''}>Seleccionar…</option>
+          ${TENDENCIAS.map(t=>`<option value="${t}" ${f.tendencia===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Plan de acción <span style="font-weight:400;color:var(--muted);">(opcional)</span></label>
+      <textarea data-role="planAccion" placeholder="Ej: Evaluar alternativas de contratación y optimización de rutas.">${esc(f.planAccion)}</textarea>
+    </div>
+  </div>`;
+}
+
+function renderCategoryStep(catKey){
+  const c = CAT[catKey];
+  const list = factoresByTipo(catKey);
+  const n = list.length;
+  const ok = n >= MIN_POR_CATEGORIA;
+  const stepNum = STEPS.findIndex(s=>s.id===catKey)+1;
+  return `<div class="card">
+    <div class="section-head">
+      <div class="section-eyebrow" style="color:${c.color}">Paso ${stepNum} de 8</div>
+      <h2>${c.plural}</h2>
+      <p>Identifique al menos ${MIN_POR_CATEGORIA} ${c.plural.toLowerCase()}. ${ok?'<strong style="color:'+c.color+'">✓ Mínimo requerido alcanzado.</strong> Puede seguir agregando.':''}</p>
+    </div>
+    ${list.length? list.map((f,i)=>renderFactorCard(f,i,c)).join('') : `<div class="empty-state">Todavía no cargaste ninguna ${c.label.toLowerCase()}.</div>`}
+    <button class="btn-add" onclick="addFactor('${catKey}')">+ Agregar ${c.label.toLowerCase()}</button>
+    <div class="footer-nav">
+      <button class="btn btn-secondary" onclick="goPrev()">← Volver</button>
+      <button class="btn btn-primary" onclick="goNext()">Continuar</button>
+    </div>
+  </div>`;
+}
+let debounceTimers = {};
+function bindCategoryStep(){
+  document.querySelectorAll('.factor-card').forEach(card=>{
+    const id = card.getAttribute('data-fid');
+    const f = factores.find(x=>x.id===id);
+    if(!f) return;
+    const desc = card.querySelector('[data-role=descripcion]');
+    desc.oninput = (e)=>{
+      f.descripcion = e.target.value;
+      clearTimeout(debounceTimers[f.id]);
+      // Espera una pausa en la tipeada antes de refrescar advertencias/duplicados,
+      // así no se re-renderiza (y se pierde el foco) en cada tecla.
+      debounceTimers[f.id] = setTimeout(()=>{ renderApp(); }, 600);
+    };
+    desc.onblur = ()=>{ clearTimeout(debounceTimers[f.id]); renderApp(); };
+    card.querySelector('[data-role=pais]').onchange = (e)=> f.pais = e.target.value;
+    card.querySelector('[data-role=tendencia]').onchange = (e)=> f.tendencia = e.target.value;
+    card.querySelector('[data-role=planAccion]').oninput = (e)=> f.planAccion = e.target.value;
+  });
+}
+window.addFactor = function(catKey){
+  factores.push(newFactor(catKey));
+  renderApp();
+};
+window.removeFactor = function(id){
+  factores = factores.filter(f=>f.id!==id);
+  renderApp();
+};
+window.dismissDup = function(id){ duplicateDismissed[id] = true; renderApp(); };
+window.focusFactor = function(id){
+  renderApp();
+  setTimeout(()=>{
+    const c = document.querySelector(`.factor-card[data-fid="${id}"]`);
+    if(c){ c.scrollIntoView({behavior:'smooth',block:'center'}); c.style.outline='2px solid var(--accent)'; setTimeout(()=>c.style.outline='',1600); }
+  },50);
+};
+
+/* =========================================================
+   PASO: EVALUACIÓN
+   ========================================================= */
+function renderEvalStep(){
+  if(factores.length===0){
+    return `<div class="card">
+      <div class="section-head"><div class="section-eyebrow">Paso 6 de 8</div><h2>Evaluación</h2></div>
+      <div class="empty-state">Cargá factores en los pasos anteriores para poder evaluarlos.</div>
+      <div class="footer-nav"><button class="btn btn-secondary" onclick="goPrev()">← Volver</button><div></div></div>
+    </div>`;
+  }
+  return `<div class="card">
+    <div class="section-head">
+      <div class="section-eyebrow">Paso 6 de 8</div>
+      <h2>Evaluación</h2>
+      <p>Para cada factor, indicá su <strong>Impacto</strong> e <strong>Importancia</strong>. El sistema calcula automáticamente la puntuación y el perfil de riesgo — no se ingresan manualmente.</p>
+    </div>
+    ${CAT_ORDER.map(k=>{
+      const list = factoresByTipo(k); if(!list.length) return '';
+      const c = CAT[k];
+      return `<h4 style="margin:18px 0 10px;color:${c.color};font-size:14px;">${c.plural}</h4>` +
+        list.map((f,i)=>renderEvalRow(f,i,c)).join('');
+    }).join('')}
+    <div class="footer-nav">
+      <button class="btn btn-secondary" onclick="goPrev()">← Volver</button>
+      <button class="btn btn-primary" onclick="goNext()">Continuar</button>
+    </div>
+  </div>`;
+}
+function renderEvalRow(f,i,c){
+  const r = computeEval(f);
+  const rc = riskColor(r.riesgo);
+  return `<div class="eval-row" data-fid="${f.id}">
+    <div class="eval-row-top">
+      <div class="eval-desc">${esc(f.descripcion) || '<em style="color:var(--muted)">(sin descripción)</em>'}</div>
+      <div class="eval-tag" style="background:${c.color}">${c.label} #${i+1}</div>
+    </div>
+    <div class="eval-grid grid-3">
+      <div class="field" style="margin-bottom:0;">
+        <label>Impacto</label>
+        <select data-role="impacto">
+          <option value="" ${f.impacto===''?'selected':''}>Seleccionar…</option>
+          ${IMPACTOS.map(v=>`<option value="${v}" ${f.impacto===v?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Importancia</label>
+        <select data-role="importancia">
+          <option value="" ${f.importancia===''?'selected':''}>Seleccionar…</option>
+          ${IMPORTANCIAS.map(v=>`<option value="${v}" ${f.importancia===v?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Tendencia</label>
+        <select data-role="tendencia">
+          <option value="" ${f.tendencia===''?'selected':''}>Seleccionar…</option>
+          ${TENDENCIAS.map(v=>`<option value="${v}" ${f.tendencia===v?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    ${(!f.tendencia && (f.impacto||f.importancia)) ? `<div class="warning-note">Falta seleccionar la tendencia: sin ese dato no se puede calcular la puntuación final ni el perfil de riesgo.</div>` : ''}
+    <div class="eval-result">
+      <div class="metric"><span class="metric-label">Puntuación base</span><span class="metric-value">${r.G ?? '—'}</span></div>
+      <div class="metric"><span class="metric-label">Puntuación final</span><span class="metric-value">${r.J ?? '—'}</span></div>
+      <div class="metric"><span class="metric-label">Perfil de riesgo</span><span class="risk-pill" style="background:${rc.bg};color:${rc.fg}">${r.riesgo ?? '—'}</span></div>
+    </div>
+  </div>`;
+}
+function bindEvalStep(){
+  document.querySelectorAll('.eval-row').forEach(row=>{
+    const id = row.getAttribute('data-fid');
+    const f = factores.find(x=>x.id===id);
+    if(!f) return;
+    row.querySelector('[data-role=impacto]').onchange = (e)=>{ f.impacto=e.target.value; renderApp(); };
+    row.querySelector('[data-role=importancia]').onchange = (e)=>{ f.importancia=e.target.value; renderApp(); };
+    row.querySelector('[data-role=tendencia]').onchange = (e)=>{ f.tendencia=e.target.value; renderApp(); };
+  });
+}
+
+/* =========================================================
+   PASO: RESUMEN
+   ========================================================= */
+function renderResumenStep(){
+  const missing = missingSummary();
+  return `<div class="card">
+    <div class="section-head">
+      <div class="section-eyebrow">Paso 7 de 8</div>
+      <h2>Resumen del análisis</h2>
+      <p>Revisá los factores antes de confirmar. Podés volver a editar cualquier paso.</p>
+    </div>
+    ${missing.length? `<div class="validation-banner blocked">
+        <strong>El análisis aún no puede finalizarse.</strong>
+        <ul>${missing.map(m=>`<li>Falta incorporar al menos ${m.need} ${m.need>1?CAT[m.cat].plural.toLowerCase():CAT[m.cat].label.toLowerCase()}.</li>`).join('')}</ul>
+      </div>` : `<div class="validation-banner ok"><strong>✓ El análisis cumple con los mínimos requeridos.</strong></div>`}
+    ${CAT_ORDER.map(k=>{
+      const c = CAT[k]; const list = factoresByTipo(k);
+      return `<div class="summary-block">
+        <div class="summary-block-head">
+          <div class="gauge-badge" style="background:${c.color}">${c.letter}</div>
+          <h3 style="font-size:15px;">${c.plural} <span style="color:var(--muted);font-weight:500;">(${list.length})</span></h3>
+        </div>
+        ${list.length? list.map((f,i)=>{
+          const r = computeEval(f); const rc = riskColor(r.riesgo);
+          return `<div class="summary-item">
+            <div class="n">${i+1}.</div>
+            <div class="body">
+              <div>${esc(f.descripcion)||'<em style="color:var(--muted)">(sin descripción)</em>'}</div>
+              <div class="meta">
+                <span class="chip">${esc(f.pais)}</span>
+                <span class="chip">${esc(f.tendencia)||'Sin tendencia'}</span>
+                ${r.riesgo? `<span class="chip" style="background:${rc.bg};color:${rc.fg}">Riesgo: ${r.riesgo}</span>`:''}
+                ${r.J!==null? `<span class="chip">Puntuación: ${r.J}</span>`:''}
+              </div>
+              ${f.planAccion? `<div class="plan">Plan de acción: ${esc(f.planAccion)}</div>`:''}
+            </div>
+          </div>`;
+        }).join('') : `<p style="color:var(--muted);font-size:13.5px;">Sin factores cargados.</p>`}
+      </div>`;
+    }).join('')}
+    <div class="footer-nav">
+      <button class="btn btn-secondary" onclick="goPrev()">← Volver a editar</button>
+      <button class="btn btn-primary" ${missing.length?'disabled':''} onclick="goNext()">Continuar</button>
+    </div>
+  </div>`;
+}
+
+/* =========================================================
+   PASO: CONFIRMACIÓN
+   ========================================================= */
+function renderConfirmStep(){
+  const missing = missingSummary();
+  return `<div class="card">
+    <div class="section-head">
+      <div class="section-eyebrow">Paso 8 de 8</div>
+      <h2>Confirmación</h2>
+      <p>Al confirmar, el análisis queda registrado como un conjunto de factores independientes, listo para consolidación posterior.</p>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Período</label><div>${esc(info.periodo)||'—'}</div></div>
+      <div class="field"><label>Responsable</label><div>${esc(info.responsable)||'—'}</div></div>
+    </div>
+    <div class="field"><label>Países</label><div>${info.paises.join(', ')||'—'}</div></div>
+    <div class="field"><label>Total de factores</label><div>${factores.length}</div></div>
+    ${missing.length? `<div class="validation-banner blocked"><strong>No se puede confirmar todavía.</strong> Volvé al resumen para completar los mínimos.</div>` : ''}
+    <div class="footer-nav">
+      <button class="btn btn-secondary" onclick="goPrev()">← Volver a editar</button>
+      <button class="btn btn-primary" ${missing.length?'disabled':''} onclick="confirmSubmit()">✓ Confirmar y enviar</button>
+    </div>
+  </div>`;
+}
+window.confirmSubmit = async function(){
+  const btn = event.target; btn.disabled = true; btn.textContent = 'Guardando…';
+  const id = await saveAnalisis();
+  lastSavedId = id;
+  submitted = true;
+  saveFailed = !id;
+  renderApp();
+};
+
+/* =========================================================
+   PANTALLA DE ÉXITO
+   ========================================================= */
+function renderSuccess(){
+  if(saveFailed){
+    return `<div class="card success-wrap">
+      <div class="success-icon" style="background:var(--danger-tint);color:var(--danger);">!</div>
+      <h2 style="font-size:22px;margin-bottom:8px;">No se pudo guardar el análisis</h2>
+      <p style="color:var(--ink-soft);margin-bottom:26px;">El navegador bloqueó el almacenamiento local (por ejemplo, en modo incógnito o con cookies de terceros deshabilitadas). Probá abrir el archivo en una ventana normal, o exportá manualmente después de reintentar.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="submitted=false;saveFailed=false;renderApp();">← Volver e intentar de nuevo</button>
+      </div>
+    </div>`;
+  }
+  let syncNote;
+  if(syncStatus==='synced'){
+    syncNote = '✓ Sincronizado con SharePoint — visible para todo el equipo.';
+  } else if(syncStatus==='error'){
+    syncNote = 'No se pudo sincronizar con SharePoint ahora, pero quedó guardado en este navegador. Podés reintentar desde "Ver consolidado" → Actualizar, o revisar la conexión en ⚙.';
+  } else {
+    syncNote = 'Los datos quedan guardados solo en este navegador. Conectá SharePoint desde ⚙ para compartirlos con el equipo.';
+  }
+  return `<div class="card success-wrap">
+    <div class="success-icon">✓</div>
+    <h2 style="font-size:22px;margin-bottom:8px;">Análisis registrado</h2>
+    <p style="color:var(--ink-soft);margin-bottom:8px;">Se guardaron ${factores.length} factores — período ${esc(info.periodo)}.</p>
+    <p style="color:var(--muted);font-size:12.5px;margin-bottom:26px;">${syncNote}</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="startNew()">+ Nuevo análisis</button>
+      <button class="btn btn-primary" onclick="toggleView()">Ver consolidado</button>
+    </div>
+  </div>`;
+}
+window.startNew = function(){
+  info = { paises: ['Argentina'], periodo: info.periodo, responsable:'' };
+  factores = []; stepIndex = 0; submitted = false; saveFailed = false; syncStatus = null; duplicateDismissed = {};
+  renderApp();
+};
+
+/* =========================================================
+   NAVEGACIÓN DEL WIZARD
+   ========================================================= */
+window.goNext = function(){
+  if(stepIndex < STEPS.length-1){ stepIndex++; renderApp(); window.scrollTo({top:0,behavior:'smooth'}); }
+};
+window.goPrev = function(){
+  if(stepIndex > 0){ stepIndex--; renderApp(); window.scrollTo({top:0,behavior:'smooth'}); }
+};
+
+/* =========================================================
+   CONSOLIDADO / DASHBOARD
+   ========================================================= */
+window.toggleView = async function(){
+  view = (view==='consolidado') ? 'wizard' : 'consolidado';
+  if(view==='consolidado'){ await loadConsolidado(); renderApp(); } // siempre refresca al entrar
+  else renderApp();
+};
+window.refreshConsolidado = async function(){
+  await loadConsolidado();
+  renderApp();
+};
+
+/* =========================================================
+   CONFIGURACIÓN (conexión con SharePoint / Power Automate)
+   ========================================================= */
+window.openSettings = function(){
+  if(view!=='settings') viewBeforeSettings = view;
+  view = 'settings';
+  renderApp();
+};
+window.closeSettings = function(){
+  view = viewBeforeSettings;
+  renderApp();
+};
+window.saveSpConfig = function(){
+  const saveUrl = document.getElementById('sp_save_url').value.trim();
+  const listUrl = document.getElementById('sp_list_url').value.trim();
+  spConfig = { saveUrl, listUrl };
+  try{ localStorage.setItem('foda:sp-config', JSON.stringify(spConfig)); }catch(e){ /* no se pudo guardar */ }
+  consolidado.loaded = false; // fuerza a recargar con la nueva config la próxima vez
+  closeSettings();
+};
+window.testSpConnection = async function(){
+  const status = document.getElementById('sp_test_status');
+  const listUrl = document.getElementById('sp_list_url').value.trim();
+  if(!listUrl){ status.textContent = 'Pegá primero la URL de "Obtener Consolidado".'; status.style.color = 'var(--danger)'; return; }
+  status.textContent = 'Probando conexión…'; status.style.color = 'var(--muted)';
+  try{
+    const res = await fetch(listUrl, {method:'GET'});
+    if(res.ok){
+      const data = await res.json();
+      const items = Array.isArray(data) ? data : (data.value || []);
+      status.textContent = `✓ Conexión correcta — ${items.length} registro(s) encontrados en la lista.`;
+      status.style.color = 'var(--primary-dark)';
+    } else {
+      status.textContent = `✗ El flujo respondió con error ${res.status}. Revisá la URL y el flujo en Power Automate.`;
+      status.style.color = 'var(--danger)';
+    }
+  }catch(e){
+    status.textContent = '✗ No se pudo conectar. Revisá la URL o la conexión a internet.';
+    status.style.color = 'var(--danger)';
+  }
+};
+function renderSettings(){
+  return `<div class="card">
+    <div class="section-head">
+      <div class="section-eyebrow">Configuración</div>
+      <h2>Conexión con SharePoint</h2>
+      <p>Pegá acá las dos URLs de los flujos de Power Automate para que este formulario guarde y consulte los análisis en la lista de SharePoint compartida, en vez de solo en este navegador.</p>
+    </div>
+    <div class="field">
+      <label>URL del flujo "Guardar Análisis" (POST)</label>
+      <input type="text" id="sp_save_url" value="${esc(spConfig.saveUrl)}" placeholder="https://prod-XX.westus.logic.azure.com/workflows/.../triggers/manual/paths/invoke?...">
+    </div>
+    <div class="field">
+      <label>URL del flujo "Obtener Consolidado" (GET)</label>
+      <input type="text" id="sp_list_url" value="${esc(spConfig.listUrl)}" placeholder="https://prod-XX.westus.logic.azure.com/workflows/.../triggers/manual/paths/invoke?...">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="btn btn-secondary" onclick="testSpConnection()">Probar conexión</button>
+      <span id="sp_test_status" style="font-size:12.5px;color:var(--muted);"></span>
+    </div>
+    <p class="hint" style="margin-bottom:20px;">Esta configuración queda guardada en este navegador. Si abrís el formulario en otra computadora, hay que pegar las mismas URLs ahí también — son las mismas para todo el equipo, se las podés pasar a tus compañeros junto con el archivo.</p>
+    <div class="footer-nav">
+      <button class="btn btn-secondary" onclick="closeSettings()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSpConfig()">Guardar configuración</button>
+    </div>
+  </div>`;
+}
+
+function flattenRecords(){
+  return consolidado.rows || [];
+}
+function applyFilters(rows){
+  const flt = consolidado.filters;
+  return rows.filter(r=>
+    (!flt.pais || r.pais===flt.pais) &&
+    (!flt.tipo || r.tipo===flt.tipo) &&
+    (!flt.tendencia || r.tendencia===flt.tendencia) &&
+    (!flt.riesgo || r.riesgo===flt.riesgo) &&
+    (!flt.periodo || r.periodo===flt.periodo)
+  );
+}
+function uniqueVals(rows, key){ return Array.from(new Set(rows.map(r=>r[key]).filter(Boolean))); }
+
+function renderConsolidado(){
+  const allRows = flattenRecords();
+  const numAnalisis = new Set(allRows.map(r=>r.analisisId)).size;
+  const sourceLabel = consolidado.source==='sharepoint'
+    ? '🔗 Datos desde SharePoint · compartido con todo el equipo'
+    : '💻 Datos guardados solo en este navegador' + (spEnabled() ? ' (no se pudo conectar a SharePoint)' : '');
+  if(allRows.length===0){
+    return `<div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${sourceLabel}</div>
+      <div class="empty-analyses">
+        <h3 style="margin-bottom:8px;">Todavía no hay análisis guardados</h3>
+        <p>Completá y confirmá un formulario FODA para verlo acá.</p>
+        ${!spEnabled() ? `<p style="margin-top:14px;"><button class="btn btn-secondary" onclick="openSettings()">⚙ Conectar con SharePoint</button></p>` : ''}
+      </div>
+    </div>`;
+  }
+  const rows = applyFilters(allRows);
+  const flt = consolidado.filters;
+
+  // dashboard counts
+  const byCat = {}; CAT_ORDER.forEach(k=>byCat[k]=rows.filter(r=>r.tipo===k).length);
+  const byPais = {}; uniqueVals(allRows,'pais').forEach(p=>byPais[p]=rows.filter(r=>r.pais===p).length);
+  const byTend = {}; TENDENCIAS.forEach(t=>byTend[t]=rows.filter(r=>r.tendencia===t).length);
+  const byRiesgo = {}; ['Bajo','Medio','Alto','Muy Alto'].forEach(r2=>byRiesgo[r2]=rows.filter(r=>r.riesgo===r2).length);
+  const maxCat = Math.max(1,...Object.values(byCat));
+  const maxPais = Math.max(1,...Object.values(byPais));
+  const maxTend = Math.max(1,...Object.values(byTend));
+  const maxRiesgo = Math.max(1,...Object.values(byRiesgo));
+
+  return `<div class="card">
+    <div class="section-head">
+      <div class="section-eyebrow">${numAnalisis} análisis guardados · ${sourceLabel}</div>
+      <h2>Consolidado FODA</h2>
+      <p>Vista unificada de todos los factores registrados, filtrable y exportable.</p>
+    </div>
+
+    <div class="dash-grid">
+      <div>
+        <h4 style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:var(--font-mono);margin-bottom:10px;">Por categoría</h4>
+        ${CAT_ORDER.map(k=>`<div class="bar-row"><span>${CAT[k].plural}</span><div class="bar-track"><div class="bar-fill" style="width:${(byCat[k]/maxCat)*100}%;background:${CAT[k].color}"></div></div><span>${byCat[k]}</span></div>`).join('')}
+      </div>
+      <div>
+        <h4 style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:var(--font-mono);margin-bottom:10px;">Por país</h4>
+        ${Object.keys(byPais).map(p=>`<div class="bar-row"><span>${p}</span><div class="bar-track"><div class="bar-fill" style="width:${(byPais[p]/maxPais)*100}%;background:var(--primary)"></div></div><span>${byPais[p]}</span></div>`).join('')}
+      </div>
+      <div>
+        <h4 style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:var(--font-mono);margin-bottom:10px;">Por tendencia</h4>
+        ${TENDENCIAS.map(t=>`<div class="bar-row"><span>${t}</span><div class="bar-track"><div class="bar-fill" style="width:${(byTend[t]/maxTend)*100}%;background:var(--oportunidad)"></div></div><span>${byTend[t]}</span></div>`).join('')}
+      </div>
+      <div>
+        <h4 style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:var(--font-mono);margin-bottom:10px;">Por riesgo</h4>
+        ${['Bajo','Medio','Alto','Muy Alto'].map(r2=>{const rc=riskColor(r2);return `<div class="bar-row"><span>${r2}</span><div class="bar-track"><div class="bar-fill" style="width:${(byRiesgo[r2]/maxRiesgo)*100}%;background:${rc.fg}"></div></div><span>${byRiesgo[r2]}</span></div>`;}).join('')}
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <select id="f_pais"><option value="">País (todos)</option>${uniqueVals(allRows,'pais').map(p=>`<option value="${p}" ${flt.pais===p?'selected':''}>${p}</option>`).join('')}</select>
+      <select id="f_tipo"><option value="">Factor (todos)</option>${CAT_ORDER.map(k=>`<option value="${k}" ${flt.tipo===k?'selected':''}>${CAT[k].plural}</option>`).join('')}</select>
+      <select id="f_tendencia"><option value="">Tendencia (todas)</option>${TENDENCIAS.map(t=>`<option value="${t}" ${flt.tendencia===t?'selected':''}>${t}</option>`).join('')}</select>
+      <select id="f_riesgo"><option value="">Riesgo (todos)</option>${['Bajo','Medio','Alto','Muy Alto'].map(r2=>`<option value="${r2}" ${flt.riesgo===r2?'selected':''}>${r2}</option>`).join('')}</select>
+      <select id="f_periodo"><option value="">Período (todos)</option>${uniqueVals(allRows,'periodo').map(a=>`<option value="${a}" ${flt.periodo===a?'selected':''}>${a}</option>`).join('')}</select>
+      <button class="btn btn-secondary" onclick="clearFilters()">Limpiar filtros</button>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-size:12.5px;color:var(--muted);">${rows.length} de ${allRows.length} factores</span>
+      <div style="display:flex;gap:8px;">
+        ${spEnabled() ? `<button class="btn btn-secondary" onclick="refreshConsolidado()">↻ Actualizar</button>` : ''}
+        <button class="btn btn-secondary" onclick="exportExcel()">⬇ Exportar a Excel</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Factor</th><th>Descripción</th><th>País</th><th>Impacto</th><th>Importancia</th><th>Tendencia</th><th>Puntuación</th><th>Riesgo</th><th>Plan de acción</th><th>Período</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>{const rc=riskColor(r.riesgo);return `<tr>
+            <td><span class="chip" style="background:${CAT[r.tipo].tint};color:${CAT[r.tipo].color}">${CAT[r.tipo].label}</span></td>
+            <td style="max-width:260px;">${esc(r.descripcion)}</td>
+            <td>${esc(r.pais)}</td>
+            <td>${esc(r.impacto)||'—'}</td>
+            <td>${esc(r.importancia)||'—'}</td>
+            <td>${esc(r.tendencia)||'—'}</td>
+            <td style="font-family:var(--font-mono);">${r.puntuacion ?? '—'}</td>
+            <td>${r.riesgo? `<span class="risk-pill" style="background:${rc.bg};color:${rc.fg}">${r.riesgo}</span>`:'—'}</td>
+            <td style="max-width:220px;color:var(--ink-soft);">${esc(r.planAccion)||'—'}</td>
+            <td>${esc(r.periodo)||'—'}</td>
+          </tr>`;}).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+window.clearFilters = function(){
+  consolidado.filters = {pais:'',tipo:'',tendencia:'',riesgo:'',periodo:''};
+  renderApp();
+};
+function bindConsolidado(){
+  const map = {f_pais:'pais',f_tipo:'tipo',f_tendencia:'tendencia',f_riesgo:'riesgo',f_periodo:'periodo'};
+  Object.keys(map).forEach(id=>{
+    const elx = document.getElementById(id);
+    if(elx) elx.onchange = (e)=>{ consolidado.filters[map[id]] = e.target.value; renderApp(); };
+  });
+}
+window.exportExcel = function(){
+  const rows = applyFilters(flattenRecords());
+  const data = rows.map(r=>({
+    'Factor': CAT[r.tipo].label,
+    'Descripción': r.descripcion,
+    'País': r.pais,
+    'Impacto': r.impacto,
+    'Importancia': r.importancia,
+    'Tendencia': r.tendencia,
+    'Puntuación Base': r.puntuacionBase,
+    'Puntuación Final': r.puntuacion,
+    'Perfil de Riesgo': r.riesgo,
+    'Plan de acción': r.planAccion,
+    'Período': r.periodo,
+    'Responsable': r.responsable,
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:12},{wch:50},{wch:12},{wch:10},{wch:20},{wch:14},{wch:14},{wch:14},{wch:14},{wch:40},{wch:10},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Consolidado FODA');
+  XLSX.writeFile(wb, 'Consolidado_FODA.xlsx');
+};
+
+/* =========================================================
+   RENDER PRINCIPAL
+   ========================================================= */
+function renderApp(preserveFocus){
+  const app = document.getElementById('app');
+
+  // Guardamos qué campo tenía el foco (y la posición del cursor) para restaurarlo
+  // después de reconstruir el HTML, evitando que el usuario "salte" del campo al tipear.
+  const active = document.activeElement;
+  let focusInfo = null;
+  if(active && app.contains(active) && (active.tagName==='TEXTAREA' || active.tagName==='INPUT' || active.tagName==='SELECT')){
+    const card = active.closest('[data-fid]');
+    focusInfo = {
+      fid: card ? card.getAttribute('data-fid') : null,
+      role: active.getAttribute('data-role') || active.id || null,
+      selStart: (typeof active.selectionStart==='number') ? active.selectionStart : null,
+      selEnd: (typeof active.selectionEnd==='number') ? active.selectionEnd : null,
+    };
+  }
+
+  const navBtn = document.getElementById('navToggle');
+  navBtn.textContent = view==='consolidado' ? '← Volver al formulario' : 'Ver consolidado';
+  document.getElementById('brandSub').textContent = view==='consolidado' ? 'Vista consolidada' : (view==='settings' ? 'Configuración' : 'Análisis estandarizado · SGC');
+
+  let html = '';
+  if(view==='settings'){
+    html = renderSettings();
+  } else if(view==='consolidado'){
+    html = renderConsolidado();
+  } else if(submitted){
+    html = renderSuccess();
+  } else {
+    html += renderGauges();
+    html += renderStepper();
+    const step = STEPS[stepIndex];
+    if(step.id==='info') html += renderInfoStep();
+    else if(CAT_ORDER.includes(step.id)) html += renderCategoryStep(step.id);
+    else if(step.id==='eval') html += renderEvalStep();
+    else if(step.id==='resumen') html += renderResumenStep();
+    else if(step.id==='confirm') html += renderConfirmStep();
+  }
+  app.innerHTML = html;
+
+  if(view==='consolidado'){ bindConsolidado(); }
+  else if(view==='settings'){ /* sin binding adicional, los inputs se leen al guardar */ }
+  else if(!submitted){
+    const step = STEPS[stepIndex];
+    if(step.id==='info') bindInfoStep();
+    else if(CAT_ORDER.includes(step.id)) bindCategoryStep();
+    else if(step.id==='eval') bindEvalStep();
+  }
+
+  // Restauramos el foco y la posición del cursor en el campo que se estaba editando.
+  if(focusInfo){
+    let target = null;
+    if(focusInfo.fid){
+      const card = app.querySelector(`[data-fid="${focusInfo.fid}"]`);
+      if(card && focusInfo.role) target = card.querySelector(`[data-role="${focusInfo.role}"]`);
+    } else if(focusInfo.role){
+      target = document.getElementById(focusInfo.role) || app.querySelector(`[data-role="${focusInfo.role}"]`);
+    }
+    if(target){
+      target.focus();
+      if(focusInfo.selStart!==null && target.setSelectionRange){
+        try{ target.setSelectionRange(focusInfo.selStart, focusInfo.selEnd); }catch(e){}
+      }
+    }
+  }
+}
+
+renderApp();
+</script>
+</body>
+</html>
