@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -143,6 +143,9 @@ input,select,textarea{font-family:var(--font-body);}
   outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-tint);
 }
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.pais-check-group{display:flex;gap:14px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border,#dcdfe4);border-radius:8px;background:var(--surface-sunken,#f7f8fa);}
+.pais-check-item{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink,#1f2328);cursor:pointer;user-select:none;}
+.pais-check-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--primary,#2e7d32);}
 @media (max-width:560px){.grid-2{grid-template-columns:1fr;}}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
 @media (max-width:720px){.grid-3{grid-template-columns:1fr 1fr;}}
@@ -269,14 +272,6 @@ tr:last-child td{border-bottom:none;}
 .bar-fill{height:100%;border-radius:100px;}
 .empty-analyses{text-align:center;padding:60px 20px;color:var(--muted);}
 </style>
-
-<!--[if gte mso 9]><xml>
-<mso:CustomDocumentProperties>
-<mso:_ApprovalStatus msdt:dt="string">0</mso:_ApprovalStatus>
-<mso:_ApprovalAssignedTo msdt:dt="string"></mso:_ApprovalAssignedTo>
-<mso:_ApprovalRespondedBy msdt:dt="string"></mso:_ApprovalRespondedBy>
-</mso:CustomDocumentProperties>
-</xml><![endif]-->
 </head>
 <body>
 <div class="topbar">
@@ -366,7 +361,7 @@ function spEnabled(){ return !!(spConfig.saveUrl && spConfig.listUrl); }
    HELPERS DE NEGOCIO
    ========================================================= */
 function newFactor(tipo){
-  return { id:'f'+(factorSeq++), tipo, descripcion:'', pais:'Argentina', tendencia:'', planAccion:'', impacto:'', importancia:'' };
+  return { id:'f'+(factorSeq++), tipo, descripcion:'', paises:['Argentina'], tendencia:'', planAccion:'', impacto:'', importancia:'' };
 }
 function countByTipo(tipo){ return factores.filter(f=>f.tipo===tipo).length; }
 function factoresByTipo(tipo){ return factores.filter(f=>f.tipo===tipo); }
@@ -441,13 +436,22 @@ function lsSet(key, value){
   catch(e){ console.error('No se pudo guardar en localStorage', e); return null; }
 }
 
+function expandFactorPorPais(f){
+  // Un factor marcado con 2+ países se convierte en un registro por cada país,
+  // porque SharePoint (columna Pais) guarda un solo valor por fila.
+  const paises = (f.paises && f.paises.length) ? f.paises : ['Argentina'];
+  const evald = computeEval(f);
+  const { paises: _omit, ...base } = f;
+  return paises.map(p => ({ ...base, ...evald, pais: p }));
+}
+
 async function saveAnalisis(){
   const id = 'a_'+Date.now();
   const record = {
     id,
     fecha: new Date().toISOString(),
     info: {...info},
-    factores: factores.map(f=>({...f, ...computeEval(f)}))
+    factores: factores.flatMap(f=>expandFactorPorPais(f))
   };
 
   // 1) Guardado local (siempre, como respaldo aunque falle SharePoint)
@@ -666,10 +670,14 @@ function renderFactorCard(f, idx, c){
     </div>
     <div class="grid-2">
       <div class="field">
-        <label>País</label>
-        <select data-role="pais">
-          ${PAISES.map(p=>`<option value="${p}" ${f.pais===p?'selected':''}>${p}</option>`).join('')}
-        </select>
+        <label>País <span style="font-weight:400;color:var(--muted);">(marque los que apliquen)</span></label>
+        <div class="pais-check-group" data-role="pais-group">
+          ${PAISES.map(p=>`<label class="pais-check-item">
+            <input type="checkbox" value="${p}" ${(f.paises||[]).includes(p)?'checked':''}>
+            <span>${p}</span>
+          </label>`).join('')}
+        </div>
+        ${(!f.paises || f.paises.length===0) ? `<div class="warning-note danger">Seleccioná al menos un país.</div>` : ''}
       </div>
       <div class="field">
         <label>Tendencia</label>
@@ -721,7 +729,16 @@ function bindCategoryStep(){
       debounceTimers[f.id] = setTimeout(()=>{ renderApp(); }, 600);
     };
     desc.onblur = ()=>{ clearTimeout(debounceTimers[f.id]); renderApp(); };
-    card.querySelector('[data-role=pais]').onchange = (e)=> f.pais = e.target.value;
+    const paisGroup = card.querySelector('[data-role=pais-group]');
+    if(paisGroup){
+      paisGroup.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+        cb.onchange = ()=>{
+          const checked = Array.from(paisGroup.querySelectorAll('input[type=checkbox]:checked')).map(x=>x.value);
+          f.paises = checked;
+          renderApp();
+        };
+      });
+    }
     card.querySelector('[data-role=tendencia]').onchange = (e)=> f.tendencia = e.target.value;
     card.querySelector('[data-role=planAccion]').oninput = (e)=> f.planAccion = e.target.value;
   });
@@ -851,7 +868,7 @@ function renderResumenStep(){
             <div class="body">
               <div>${esc(f.descripcion)||'<em style="color:var(--muted)">(sin descripción)</em>'}</div>
               <div class="meta">
-                <span class="chip">${esc(f.pais)}</span>
+                <span class="chip">${esc((f.paises||[]).join(' + ')||'Sin país')}</span>
                 <span class="chip">${esc(f.tendencia)||'Sin tendencia'}</span>
                 ${r.riesgo? `<span class="chip" style="background:${rc.bg};color:${rc.fg}">Riesgo: ${r.riesgo}</span>`:''}
                 ${r.J!==null? `<span class="chip">Puntuación: ${r.J}</span>`:''}
