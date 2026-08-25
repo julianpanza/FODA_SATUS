@@ -345,15 +345,27 @@ let factorSeq = 1;
 let duplicateDismissed = {}; // id -> true once user clicks "continuar igualmente"
 let consolidado = { filters:{pais:'',tipo:'',tendencia:'',riesgo:'',periodo:''}, rows:[], loaded:false, source:'local' };
 
-// Configuración de conexión con SharePoint (vía Power Automate). Se guarda en
-// este navegador (localStorage), no en el archivo, así que cada persona que
-// use el formulario la pega una vez desde el panel de configuración (⚙).
-let spConfig = { saveUrl:'', listUrl:'' };
+// Configuración de conexión con SharePoint (vía Power Automate).
+// Estas son las URLs por defecto del equipo: quedan incluidas en el archivo,
+// así que cualquiera que abra el link ya tiene la conexión funcionando sin
+// tener que pegarlas manualmente. Si en el futuro se recrean los flujos en
+// Power Automate (y por lo tanto cambian las URLs/firma), hay que actualizar
+// estas dos constantes y volver a publicar el archivo.
+const DEFAULT_SP_SAVE_URL = 'https://defaultf5fde93de15d4fd6b007d5038bfc61.b1.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/12/workflows/eb6409b83d72470d9aaf830369fcb9d6/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Gg6r9xwLXid4XBhOwhvEnsmi5UqsyWJtcLd3nGQWlpo';
+const DEFAULT_SP_LIST_URL = 'https://defaultf5fde93de15d4fd6b007d5038bfc61.b1.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/08/workflows/70d9ae72813444ae9a1b282f2d2bc605/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4cwcJm2D0w4IlOo0Da5936JKsbihjpsLSNJSp7o4A8I';
+
+// Si el navegador tiene una configuración guardada manualmente (por ejemplo,
+// alguien probando una URL distinta), esa tiene prioridad sobre la de fábrica.
+let spConfig = { saveUrl: DEFAULT_SP_SAVE_URL, listUrl: DEFAULT_SP_LIST_URL };
 (function loadSpConfig(){
   try{
     const raw = localStorage.getItem('foda:sp-config');
-    if(raw){ const parsed = JSON.parse(raw); spConfig.saveUrl = parsed.saveUrl||''; spConfig.listUrl = parsed.listUrl||''; }
-  }catch(e){ /* sin configuración guardada */ }
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed.saveUrl) spConfig.saveUrl = parsed.saveUrl;
+      if(parsed.listUrl) spConfig.listUrl = parsed.listUrl;
+    }
+  }catch(e){ /* sin configuración guardada, se usan las URLs por defecto */ }
 })();
 function spEnabled(){ return !!(spConfig.saveUrl && spConfig.listUrl); }
 
@@ -1001,6 +1013,12 @@ window.saveSpConfig = function(){
   consolidado.loaded = false; // fuerza a recargar con la nueva config la próxima vez
   closeSettings();
 };
+window.resetSpConfig = function(){
+  spConfig = { saveUrl: DEFAULT_SP_SAVE_URL, listUrl: DEFAULT_SP_LIST_URL };
+  try{ localStorage.removeItem('foda:sp-config'); }catch(e){ /* no se pudo borrar */ }
+  consolidado.loaded = false;
+  renderApp();
+};
 window.testSpConnection = async function(){
   const status = document.getElementById('sp_test_status');
   const listUrl = document.getElementById('sp_list_url').value.trim();
@@ -1041,10 +1059,13 @@ function renderSettings(){
       <button class="btn btn-secondary" onclick="testSpConnection()">Probar conexión</button>
       <span id="sp_test_status" style="font-size:12.5px;color:var(--muted);"></span>
     </div>
-    <p class="hint" style="margin-bottom:20px;">Esta configuración queda guardada en este navegador. Si abrís el formulario en otra computadora, hay que pegar las mismas URLs ahí también — son las mismas para todo el equipo, se las podés pasar a tus compañeros junto con el archivo.</p>
+    <p class="hint" style="margin-bottom:20px;">Estas URLs ya vienen configuradas de fábrica en este archivo — no hace falta pegarlas para usar el formulario normalmente. Solo tocá esto si necesitás apuntar a un flujo distinto (por ejemplo, para pruebas); ese cambio queda guardado únicamente en este navegador, no afecta a los demás usuarios del link.</p>
     <div class="footer-nav">
-      <button class="btn btn-secondary" onclick="closeSettings()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveSpConfig()">Guardar configuración</button>
+      <button class="btn btn-secondary" onclick="resetSpConfig()">Restablecer valores de fábrica</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-secondary" onclick="closeSettings()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveSpConfig()">Guardar configuración</button>
+      </div>
     </div>
   </div>`;
 }
