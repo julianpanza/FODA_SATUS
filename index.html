@@ -342,7 +342,7 @@ let factores = []; // {id,tipo,descripcion,paises,tendencia}
 let factorSeq = 1;
 
 let duplicateDismissed = {}; // id -> true once user clicks "continuar igualmente"
-let consolidado = { filters:{pais:'',tipo:'',tendencia:'',riesgo:'',periodo:''}, rows:[], loaded:false, source:'local' };
+let consolidado = { filters:{pais:'',tipo:'',tendencia:'',periodo:''}, rows:[], loaded:false, source:'local' };
 
 // Configuración de conexión con SharePoint (vía Power Automate).
 // Estas son las URLs por defecto del equipo: quedan incluidas en el archivo,
@@ -1004,7 +1004,6 @@ function applyFilters(rows){
     (!flt.pais || r.pais===flt.pais) &&
     (!flt.tipo || r.tipo===flt.tipo) &&
     (!flt.tendencia || r.tendencia===flt.tendencia) &&
-    (!flt.riesgo || r.riesgo===flt.riesgo) &&
     (!flt.periodo || r.periodo===flt.periodo)
   );
 }
@@ -1033,11 +1032,9 @@ function renderConsolidado(){
   const byCat = {}; CAT_ORDER.forEach(k=>byCat[k]=rows.filter(r=>r.tipo===k).length);
   const byPais = {}; uniqueVals(allRows,'pais').forEach(p=>byPais[p]=rows.filter(r=>r.pais===p).length);
   const byTend = {}; TENDENCIAS.forEach(t=>byTend[t]=rows.filter(r=>r.tendencia===t).length);
-  const byRiesgo = {}; ['Bajo','Medio','Alto','Muy Alto'].forEach(r2=>byRiesgo[r2]=rows.filter(r=>r.riesgo===r2).length);
   const maxCat = Math.max(1,...Object.values(byCat));
   const maxPais = Math.max(1,...Object.values(byPais));
   const maxTend = Math.max(1,...Object.values(byTend));
-  const maxRiesgo = Math.max(1,...Object.values(byRiesgo));
 
   return `<div class="card">
     <div class="section-head">
@@ -1059,17 +1056,12 @@ function renderConsolidado(){
         <h4 style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:var(--font-mono);margin-bottom:10px;">Por tendencia</h4>
         ${TENDENCIAS.map(t=>`<div class="bar-row"><span>${t}</span><div class="bar-track"><div class="bar-fill" style="width:${(byTend[t]/maxTend)*100}%;background:var(--oportunidad)"></div></div><span>${byTend[t]}</span></div>`).join('')}
       </div>
-      <div>
-        <h4 style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:var(--font-mono);margin-bottom:10px;">Por riesgo</h4>
-        ${['Bajo','Medio','Alto','Muy Alto'].map(r2=>{const rc=riskColor(r2);return `<div class="bar-row"><span>${r2}</span><div class="bar-track"><div class="bar-fill" style="width:${(byRiesgo[r2]/maxRiesgo)*100}%;background:${rc.fg}"></div></div><span>${byRiesgo[r2]}</span></div>`;}).join('')}
-      </div>
     </div>
 
     <div class="filters-bar">
       <select id="f_pais"><option value="">País (todos)</option>${uniqueVals(allRows,'pais').map(p=>`<option value="${p}" ${flt.pais===p?'selected':''}>${p}</option>`).join('')}</select>
       <select id="f_tipo"><option value="">Factor (todos)</option>${CAT_ORDER.map(k=>`<option value="${k}" ${flt.tipo===k?'selected':''}>${CAT[k].plural}</option>`).join('')}</select>
       <select id="f_tendencia"><option value="">Tendencia (todas)</option>${TENDENCIAS.map(t=>`<option value="${t}" ${flt.tendencia===t?'selected':''}>${t}</option>`).join('')}</select>
-      <select id="f_riesgo"><option value="">Riesgo (todos)</option>${['Bajo','Medio','Alto','Muy Alto'].map(r2=>`<option value="${r2}" ${flt.riesgo===r2?'selected':''}>${r2}</option>`).join('')}</select>
       <select id="f_periodo"><option value="">Período (todos)</option>${uniqueVals(allRows,'periodo').map(a=>`<option value="${a}" ${flt.periodo===a?'selected':''}>${a}</option>`).join('')}</select>
       <button class="btn btn-secondary" onclick="clearFilters()">Limpiar filtros</button>
     </div>
@@ -1085,19 +1077,14 @@ function renderConsolidado(){
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>Factor</th><th>Descripción</th><th>País</th><th>Impacto</th><th>Importancia</th><th>Tendencia</th><th>Puntuación</th><th>Riesgo</th><th>Plan de acción</th><th>Período</th>
+          <th>Factor</th><th>Descripción</th><th>País</th><th>Tendencia</th><th>Período</th>
         </tr></thead>
         <tbody>
-          ${rows.map(r=>{const rc=riskColor(r.riesgo);return `<tr>
+          ${rows.map(r=>{return `<tr>
             <td><span class="chip" style="background:${CAT[r.tipo].tint};color:${CAT[r.tipo].color}">${CAT[r.tipo].label}</span></td>
             <td style="max-width:260px;">${esc(r.descripcion)}</td>
             <td>${esc(r.pais)}</td>
-            <td>${esc(r.impacto)||'—'}</td>
-            <td>${esc(r.importancia)||'—'}</td>
             <td>${esc(r.tendencia)||'—'}</td>
-            <td style="font-family:var(--font-mono);">${r.puntuacion ?? '—'}</td>
-            <td>${r.riesgo? `<span class="risk-pill" style="background:${rc.bg};color:${rc.fg}">${r.riesgo}</span>`:'—'}</td>
-            <td style="max-width:220px;color:var(--ink-soft);">${esc(r.planAccion)||'—'}</td>
             <td>${esc(r.periodo)||'—'}</td>
           </tr>`;}).join('')}
         </tbody>
@@ -1106,11 +1093,11 @@ function renderConsolidado(){
   </div>`;
 }
 window.clearFilters = function(){
-  consolidado.filters = {pais:'',tipo:'',tendencia:'',riesgo:'',periodo:''};
+  consolidado.filters = {pais:'',tipo:'',tendencia:'',periodo:''};
   renderApp();
 };
 function bindConsolidado(){
-  const map = {f_pais:'pais',f_tipo:'tipo',f_tendencia:'tendencia',f_riesgo:'riesgo',f_periodo:'periodo'};
+  const map = {f_pais:'pais',f_tipo:'tipo',f_tendencia:'tendencia',f_periodo:'periodo'};
   Object.keys(map).forEach(id=>{
     const elx = document.getElementById(id);
     if(elx) elx.onchange = (e)=>{ consolidado.filters[map[id]] = e.target.value; renderApp(); };
@@ -1122,18 +1109,12 @@ window.exportExcel = function(){
     'Factor': CAT[r.tipo].label,
     'Descripción': r.descripcion,
     'País': r.pais,
-    'Impacto': r.impacto,
-    'Importancia': r.importancia,
     'Tendencia': r.tendencia,
-    'Puntuación Base': r.puntuacionBase,
-    'Puntuación Final': r.puntuacion,
-    'Perfil de Riesgo': r.riesgo,
-    'Plan de acción': r.planAccion,
     'Período': r.periodo,
     'Responsable': r.responsable,
   }));
   const ws = XLSX.utils.json_to_sheet(data);
-  ws['!cols'] = [{wch:12},{wch:50},{wch:12},{wch:10},{wch:20},{wch:14},{wch:14},{wch:14},{wch:14},{wch:40},{wch:10},{wch:18}];
+  ws['!cols'] = [{wch:12},{wch:50},{wch:12},{wch:14},{wch:10},{wch:18}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Consolidado FODA');
   XLSX.writeFile(wb, 'Consolidado_FODA.xlsx');
