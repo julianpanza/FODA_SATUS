@@ -528,7 +528,7 @@ function mapSharePointItem(item){
     fecha: item.Fecha || item.Created || '',
     periodo: item.Periodo_ || item.Periodo || '',
     responsable: item.Responsable || '',
-    tipo: choiceVal(item.Tipo_ || item.Tipo).toString().toUpperCase().trim(),
+    tipo: choiceVal(item.Factor || item.Tipo_ || item.Tipo).toString().toUpperCase().trim(),
     descripcion: item.Descripcion || '',
     pais: choiceVal(item.Pais),
     impacto: choiceVal(item.Impacto),
