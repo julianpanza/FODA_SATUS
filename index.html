@@ -514,22 +514,30 @@ async function saveAnalisis(){
   return id;
 }
 
+function choiceVal(v){
+  // Las columnas de tipo Elección en SharePoint pueden llegar como objeto
+  // {"Value": "Argentina"} en vez de texto simple "Argentina" — esto lo
+  // "desenvuelve" para quedarnos siempre con el texto.
+  if(v===null || v===undefined) return '';
+  if(typeof v === 'object') return v.Value || v.value || '';
+  return v;
+}
 function mapSharePointItem(item){
   return {
     analisisId: item.AnalisisID || item.Id || String(item.ID||''),
     fecha: item.Fecha || item.Created || '',
     periodo: item.Periodo_ || item.Periodo || '',
     responsable: item.Responsable || '',
-    tipo: (item.Tipo_ || item.Tipo || '').toString().toUpperCase().trim(),
+    tipo: choiceVal(item.Tipo_ || item.Tipo).toString().toUpperCase().trim(),
     descripcion: item.Descripcion || '',
-    pais: item.Pais || '',
-    impacto: item.Impacto || '',
-    importancia: item.Importancia || '',
-    tendencia: item.Tendencia || '',
+    pais: choiceVal(item.Pais),
+    impacto: choiceVal(item.Impacto),
+    importancia: choiceVal(item.Importancia),
+    tendencia: choiceVal(item.Tendencia),
     planAccion: item.PlanAccion || '',
     puntuacionBase: (item.PuntuacionBase!==undefined && item.PuntuacionBase!==null && item.PuntuacionBase!=='') ? Number(item.PuntuacionBase) : null,
     puntuacion: (item.PuntuacionFinal!==undefined && item.PuntuacionFinal!==null && item.PuntuacionFinal!=='') ? Number(item.PuntuacionFinal) : null,
-    riesgo: item.PerfilRiesgo || '',
+    riesgo: choiceVal(item.PerfilRiesgo),
   };
 }
 
