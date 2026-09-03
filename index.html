@@ -314,7 +314,7 @@ const CAT = {
   AMENAZA:     {key:'AMENAZA',    label:'Amenaza',      plural:'Amenazas',      letter:'A', color:'var(--amenaza)',     tint:'var(--amenaza-tint)'},
 };
 const CAT_ORDER = ['FORTALEZA','OPORTUNIDAD','DEBILIDAD','AMENAZA'];
-const MIN_POR_CATEGORIA = 3;
+const MIN_POR_CATEGORIA = 1;
 
 const STEPS = [
   {id:'info', label:'Información general'},
@@ -322,7 +322,6 @@ const STEPS = [
   {id:'OPORTUNIDAD', label:'Oportunidades'},
   {id:'DEBILIDAD', label:'Debilidades'},
   {id:'AMENAZA', label:'Amenazas'},
-  {id:'eval', label:'Evaluación'},
   {id:'resumen', label:'Resumen'},
   {id:'confirm', label:'Confirmación'},
 ];
@@ -339,7 +338,7 @@ let syncStatus = null; // null | 'synced' | 'local-only' | 'error'
 let lastSavedId = null;
 
 let info = { paises: ['Argentina'], periodo: String(new Date().getFullYear()+ (new Date().getMonth()>=6?0:0)), responsable:'' };
-let factores = []; // {id,tipo,descripcion,pais,tendencia,planAccion,impacto,importancia}
+let factores = []; // {id,tipo,descripcion,paises,tendencia}
 let factorSeq = 1;
 
 let duplicateDismissed = {}; // id -> true once user clicks "continuar igualmente"
@@ -373,7 +372,7 @@ function spEnabled(){ return !!(spConfig.saveUrl && spConfig.listUrl); }
    HELPERS DE NEGOCIO
    ========================================================= */
 function newFactor(tipo){
-  return { id:'f'+(factorSeq++), tipo, descripcion:'', paises:['Argentina'], tendencia:'', planAccion:'', impacto:'', importancia:'' };
+  return { id:'f'+(factorSeq++), tipo, descripcion:'', paises:['Argentina'], tendencia:'' };
 }
 function countByTipo(tipo){ return factores.filter(f=>f.tipo===tipo).length; }
 function factoresByTipo(tipo){ return factores.filter(f=>f.tipo===tipo); }
@@ -429,6 +428,7 @@ function missingSummary(){
   });
   return missing;
 }
+function isResponsableValid(){ return !!(info.responsable && info.responsable.trim()); }
 
 /* =========================================================
    PERSISTENCIA
@@ -490,9 +490,11 @@ async function saveAnalisis(){
         periodo: info.periodo,
         responsable: info.responsable,
         factores: record.factores.map(f=>({
-          tipo: f.tipo, descripcion: f.descripcion, pais: f.pais,
-          impacto: f.impacto, importancia: f.importancia, tendencia: f.tendencia,
-          planAccion: f.planAccion, puntuacionBase: f.G, puntuacionFinal: f.J, perfilRiesgo: f.riesgo,
+          tipo: f.tipo, descripcion: f.descripcion, pais: f.pais, tendencia: f.tendencia,
+          // Impacto, Importancia y las puntuaciones/riesgo ya no se cargan acá:
+          // quedan para el análisis interno posterior del equipo de SGI,
+          // completándose directamente en SharePoint.
+          impacto: null, importancia: null, puntuacionBase: null, puntuacionFinal: null, perfilRiesgo: null,
         })),
       };
       const res = await fetch(spConfig.saveUrl, {
@@ -609,7 +611,7 @@ function renderGauges(){
 
 function renderStepper(){
   return `<div class="stepper">
-    ${STEPS.map((s,i)=>`<div class="step-dot ${i===stepIndex?'active':(i<stepIndex?'done':'')}" data-step="${i}">${i+1}. ${s.label}</div>`).join('')}
+    ${STEPS.map((s,i)=>`<div class="step-dot ${i===stepIndex?'active':(i<stepIndex?'done':'')}" data-step="${i}" onclick="goToStep(${i})" style="cursor:pointer;">${i+1}. ${s.label}</div>`).join('')}
   </div>`;
 }
 
@@ -619,7 +621,7 @@ function renderStepper(){
 function renderInfoStep(){
   return `<div class="card">
     <div class="section-head">
-      <div class="section-eyebrow">Paso 1 de 8</div>
+      <div class="section-eyebrow">Paso 1 de 7</div>
       <h2>Información general</h2>
       <p>Estos datos identifican el análisis. Se completan una sola vez.</p>
     </div>
@@ -637,12 +639,13 @@ function renderInfoStep(){
       </div>
     </div>
     <div class="field">
-      <label>Responsable</label>
+      <label>Responsable <span style="color:var(--amenaza);">*</span></label>
       <input type="text" id="in_responsable" value="${esc(info.responsable)}" placeholder="Nombre y apellido">
+      ${!isResponsableValid() ? `<div class="warning-note danger">Este campo es obligatorio.</div>` : ''}
     </div>
     <div class="footer-nav">
       <div></div>
-      <button class="btn btn-primary" onclick="goNext()">Continuar</button>
+      <button class="btn btn-primary" ${isResponsableValid()?'':'disabled'} onclick="goNext()">Continuar</button>
     </div>
   </div>`;
 }
@@ -651,7 +654,7 @@ function bindInfoStep(){
     info.paises = Array.from(e.target.selectedOptions).map(o=>o.value);
   };
   document.getElementById('in_periodo').oninput = (e)=> info.periodo = e.target.value;
-  document.getElementById('in_responsable').oninput = (e)=> info.responsable = e.target.value;
+  document.getElementById('in_responsable').oninput = (e)=>{ info.responsable = e.target.value; renderApp(); };
 }
 
 /* =========================================================
@@ -699,10 +702,6 @@ function renderFactorCard(f, idx, c){
         </select>
       </div>
     </div>
-    <div class="field" style="margin-bottom:0;">
-      <label>Plan de acción <span style="font-weight:400;color:var(--muted);">(opcional)</span></label>
-      <textarea data-role="planAccion" placeholder="Ej: Evaluar alternativas de contratación y optimización de rutas.">${esc(f.planAccion)}</textarea>
-    </div>
   </div>`;
 }
 
@@ -714,9 +713,9 @@ function renderCategoryStep(catKey){
   const stepNum = STEPS.findIndex(s=>s.id===catKey)+1;
   return `<div class="card">
     <div class="section-head">
-      <div class="section-eyebrow" style="color:${c.color}">Paso ${stepNum} de 8</div>
+      <div class="section-eyebrow" style="color:${c.color}">Paso ${stepNum} de 7</div>
       <h2>${c.plural}</h2>
-      <p>Identifique al menos ${MIN_POR_CATEGORIA} ${c.plural.toLowerCase()}. ${ok?'<strong style="color:'+c.color+'">✓ Mínimo requerido alcanzado.</strong> Puede seguir agregando.':''}</p>
+      <p>Identifique al menos ${MIN_POR_CATEGORIA} ${MIN_POR_CATEGORIA===1?c.label.toLowerCase():c.plural.toLowerCase()}. ${ok?'<strong style="color:'+c.color+'">✓ Mínimo requerido alcanzado.</strong> Puede seguir agregando.':''}</p>
     </div>
     ${list.length? list.map((f,i)=>renderFactorCard(f,i,c)).join('') : `<div class="empty-state">Todavía no cargaste ninguna ${c.label.toLowerCase()}.</div>`}
     <button class="btn-add" onclick="addFactor('${catKey}')">+ Agregar ${c.label.toLowerCase()}</button>
@@ -752,7 +751,6 @@ function bindCategoryStep(){
       });
     }
     card.querySelector('[data-role=tendencia]').onchange = (e)=> f.tendencia = e.target.value;
-    card.querySelector('[data-role=planAccion]').oninput = (e)=> f.planAccion = e.target.value;
   });
 }
 window.addFactor = function(catKey){
@@ -773,98 +771,24 @@ window.focusFactor = function(id){
 };
 
 /* =========================================================
-   PASO: EVALUACIÓN
-   ========================================================= */
-function renderEvalStep(){
-  if(factores.length===0){
-    return `<div class="card">
-      <div class="section-head"><div class="section-eyebrow">Paso 6 de 8</div><h2>Evaluación</h2></div>
-      <div class="empty-state">Cargá factores en los pasos anteriores para poder evaluarlos.</div>
-      <div class="footer-nav"><button class="btn btn-secondary" onclick="goPrev()">← Volver</button><div></div></div>
-    </div>`;
-  }
-  return `<div class="card">
-    <div class="section-head">
-      <div class="section-eyebrow">Paso 6 de 8</div>
-      <h2>Evaluación</h2>
-      <p>Para cada factor, indicá su <strong>Impacto</strong> e <strong>Importancia</strong>. El sistema calcula automáticamente la puntuación y el perfil de riesgo — no se ingresan manualmente.</p>
-    </div>
-    ${CAT_ORDER.map(k=>{
-      const list = factoresByTipo(k); if(!list.length) return '';
-      const c = CAT[k];
-      return `<h4 style="margin:18px 0 10px;color:${c.color};font-size:14px;">${c.plural}</h4>` +
-        list.map((f,i)=>renderEvalRow(f,i,c)).join('');
-    }).join('')}
-    <div class="footer-nav">
-      <button class="btn btn-secondary" onclick="goPrev()">← Volver</button>
-      <button class="btn btn-primary" onclick="goNext()">Continuar</button>
-    </div>
-  </div>`;
-}
-function renderEvalRow(f,i,c){
-  const r = computeEval(f);
-  const rc = riskColor(r.riesgo);
-  return `<div class="eval-row" data-fid="${f.id}">
-    <div class="eval-row-top">
-      <div class="eval-desc">${esc(f.descripcion) || '<em style="color:var(--muted)">(sin descripción)</em>'}</div>
-      <div class="eval-tag" style="background:${c.color}">${c.label} #${i+1}</div>
-    </div>
-    <div class="eval-grid grid-3">
-      <div class="field" style="margin-bottom:0;">
-        <label>Impacto</label>
-        <select data-role="impacto">
-          <option value="" ${f.impacto===''?'selected':''}>Seleccionar…</option>
-          ${IMPACTOS.map(v=>`<option value="${v}" ${f.impacto===v?'selected':''}>${v}</option>`).join('')}
-        </select>
-      </div>
-      <div class="field" style="margin-bottom:0;">
-        <label>Importancia</label>
-        <select data-role="importancia">
-          <option value="" ${f.importancia===''?'selected':''}>Seleccionar…</option>
-          ${IMPORTANCIAS.map(v=>`<option value="${v}" ${f.importancia===v?'selected':''}>${v}</option>`).join('')}
-        </select>
-      </div>
-      <div class="field" style="margin-bottom:0;">
-        <label>Tendencia</label>
-        <select data-role="tendencia">
-          <option value="" ${f.tendencia===''?'selected':''}>Seleccionar…</option>
-          ${TENDENCIAS.map(v=>`<option value="${v}" ${f.tendencia===v?'selected':''}>${v}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    ${(!f.tendencia && (f.impacto||f.importancia)) ? `<div class="warning-note">Falta seleccionar la tendencia: sin ese dato no se puede calcular la puntuación final ni el perfil de riesgo.</div>` : ''}
-    <div class="eval-result">
-      <div class="metric"><span class="metric-label">Puntuación base</span><span class="metric-value">${r.G ?? '—'}</span></div>
-      <div class="metric"><span class="metric-label">Puntuación final</span><span class="metric-value">${r.J ?? '—'}</span></div>
-      <div class="metric"><span class="metric-label">Perfil de riesgo</span><span class="risk-pill" style="background:${rc.bg};color:${rc.fg}">${r.riesgo ?? '—'}</span></div>
-    </div>
-  </div>`;
-}
-function bindEvalStep(){
-  document.querySelectorAll('.eval-row').forEach(row=>{
-    const id = row.getAttribute('data-fid');
-    const f = factores.find(x=>x.id===id);
-    if(!f) return;
-    row.querySelector('[data-role=impacto]').onchange = (e)=>{ f.impacto=e.target.value; renderApp(); };
-    row.querySelector('[data-role=importancia]').onchange = (e)=>{ f.importancia=e.target.value; renderApp(); };
-    row.querySelector('[data-role=tendencia]').onchange = (e)=>{ f.tendencia=e.target.value; renderApp(); };
-  });
-}
-
-/* =========================================================
    PASO: RESUMEN
    ========================================================= */
 function renderResumenStep(){
   const missing = missingSummary();
+  const respMissing = !isResponsableValid();
+  const blocked = missing.length>0 || respMissing;
   return `<div class="card">
     <div class="section-head">
-      <div class="section-eyebrow">Paso 7 de 8</div>
+      <div class="section-eyebrow">Paso 6 de 7</div>
       <h2>Resumen del análisis</h2>
       <p>Revisá los factores antes de confirmar. Podés volver a editar cualquier paso.</p>
     </div>
-    ${missing.length? `<div class="validation-banner blocked">
+    ${blocked? `<div class="validation-banner blocked">
         <strong>El análisis aún no puede finalizarse.</strong>
-        <ul>${missing.map(m=>`<li>Falta incorporar al menos ${m.need} ${m.need>1?CAT[m.cat].plural.toLowerCase():CAT[m.cat].label.toLowerCase()}.</li>`).join('')}</ul>
+        <ul>
+          ${respMissing? `<li>Falta indicar el Responsable (paso 1, Información general).</li>` : ''}
+          ${missing.map(m=>`<li>Falta incorporar al menos ${m.need} ${m.need>1?CAT[m.cat].plural.toLowerCase():CAT[m.cat].label.toLowerCase()}.</li>`).join('')}
+        </ul>
       </div>` : `<div class="validation-banner ok"><strong>✓ El análisis cumple con los mínimos requeridos.</strong></div>`}
     ${CAT_ORDER.map(k=>{
       const c = CAT[k]; const list = factoresByTipo(k);
@@ -874,7 +798,6 @@ function renderResumenStep(){
           <h3 style="font-size:15px;">${c.plural} <span style="color:var(--muted);font-weight:500;">(${list.length})</span></h3>
         </div>
         ${list.length? list.map((f,i)=>{
-          const r = computeEval(f); const rc = riskColor(r.riesgo);
           return `<div class="summary-item">
             <div class="n">${i+1}.</div>
             <div class="body">
@@ -882,10 +805,7 @@ function renderResumenStep(){
               <div class="meta">
                 <span class="chip">${esc((f.paises||[]).join(' + ')||'Sin país')}</span>
                 <span class="chip">${esc(f.tendencia)||'Sin tendencia'}</span>
-                ${r.riesgo? `<span class="chip" style="background:${rc.bg};color:${rc.fg}">Riesgo: ${r.riesgo}</span>`:''}
-                ${r.J!==null? `<span class="chip">Puntuación: ${r.J}</span>`:''}
               </div>
-              ${f.planAccion? `<div class="plan">Plan de acción: ${esc(f.planAccion)}</div>`:''}
             </div>
           </div>`;
         }).join('') : `<p style="color:var(--muted);font-size:13.5px;">Sin factores cargados.</p>`}
@@ -893,7 +813,7 @@ function renderResumenStep(){
     }).join('')}
     <div class="footer-nav">
       <button class="btn btn-secondary" onclick="goPrev()">← Volver a editar</button>
-      <button class="btn btn-primary" ${missing.length?'disabled':''} onclick="goNext()">Continuar</button>
+      <button class="btn btn-primary" ${blocked?'disabled':''} onclick="goNext()">Continuar</button>
     </div>
   </div>`;
 }
@@ -903,9 +823,11 @@ function renderResumenStep(){
    ========================================================= */
 function renderConfirmStep(){
   const missing = missingSummary();
+  const respMissing = !isResponsableValid();
+  const blocked = missing.length>0 || respMissing;
   return `<div class="card">
     <div class="section-head">
-      <div class="section-eyebrow">Paso 8 de 8</div>
+      <div class="section-eyebrow">Paso 7 de 7</div>
       <h2>Confirmación</h2>
       <p>Al confirmar, el análisis queda registrado como un conjunto de factores independientes, listo para consolidación posterior.</p>
     </div>
@@ -915,10 +837,10 @@ function renderConfirmStep(){
     </div>
     <div class="field"><label>Países</label><div>${info.paises.join(', ')||'—'}</div></div>
     <div class="field"><label>Total de factores</label><div>${factores.length}</div></div>
-    ${missing.length? `<div class="validation-banner blocked"><strong>No se puede confirmar todavía.</strong> Volvé al resumen para completar los mínimos.</div>` : ''}
+    ${blocked? `<div class="validation-banner blocked"><strong>No se puede confirmar todavía.</strong> ${respMissing? 'Falta indicar el Responsable (paso 1).' : 'Volvé al resumen para completar los mínimos.'}</div>` : ''}
     <div class="footer-nav">
       <button class="btn btn-secondary" onclick="goPrev()">← Volver a editar</button>
-      <button class="btn btn-primary" ${missing.length?'disabled':''} onclick="confirmSubmit()">✓ Confirmar y enviar</button>
+      <button class="btn btn-primary" ${blocked?'disabled':''} onclick="confirmSubmit()">✓ Confirmar y enviar</button>
     </div>
   </div>`;
 }
@@ -978,6 +900,9 @@ window.goNext = function(){
 };
 window.goPrev = function(){
   if(stepIndex > 0){ stepIndex--; renderApp(); window.scrollTo({top:0,behavior:'smooth'}); }
+};
+window.goToStep = function(i){
+  if(i>=0 && i<STEPS.length && i!==stepIndex){ stepIndex = i; renderApp(); window.scrollTo({top:0,behavior:'smooth'}); }
 };
 
 /* =========================================================
@@ -1251,7 +1176,6 @@ function renderApp(preserveFocus){
     const step = STEPS[stepIndex];
     if(step.id==='info') html += renderInfoStep();
     else if(CAT_ORDER.includes(step.id)) html += renderCategoryStep(step.id);
-    else if(step.id==='eval') html += renderEvalStep();
     else if(step.id==='resumen') html += renderResumenStep();
     else if(step.id==='confirm') html += renderConfirmStep();
   }
@@ -1263,7 +1187,6 @@ function renderApp(preserveFocus){
     const step = STEPS[stepIndex];
     if(step.id==='info') bindInfoStep();
     else if(CAT_ORDER.includes(step.id)) bindCategoryStep();
-    else if(step.id==='eval') bindEvalStep();
   }
 
   // Restauramos el foco y la posición del cursor en el campo que se estaba editando.
