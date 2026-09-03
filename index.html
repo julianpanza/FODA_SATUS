@@ -1010,7 +1010,9 @@ function applyFilters(rows){
 function uniqueVals(rows, key){ return Array.from(new Set(rows.map(r=>r[key]).filter(Boolean))); }
 
 function renderConsolidado(){
-  const allRows = flattenRecords();
+  // Filtramos cualquier fila con un "tipo" que no sea Fortaleza/Oportunidad/Debilidad/Amenaza
+  // (por ejemplo, datos sueltos de pruebas anteriores) para que no rompan la vista.
+  const allRows = flattenRecords().filter(r=>CAT_ORDER.includes(r.tipo));
   const numAnalisis = new Set(allRows.map(r=>r.analisisId)).size;
   const sourceLabel = consolidado.source==='sharepoint'
     ? '🔗 Datos desde SharePoint · compartido con todo el equipo'
@@ -1104,7 +1106,7 @@ function bindConsolidado(){
   });
 }
 window.exportExcel = function(){
-  const rows = applyFilters(flattenRecords());
+  const rows = applyFilters(flattenRecords().filter(r=>CAT_ORDER.includes(r.tipo)));
   const data = rows.map(r=>({
     'Factor': CAT[r.tipo].label,
     'Descripción': r.descripcion,
